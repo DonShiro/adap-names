@@ -18,56 +18,206 @@ export class Name {
     private delimiter: string = DEFAULT_DELIMITER;
     private components: string[] = [];
 
-    /** Expects that all Name components are properly masked */
+    /**
+     * @methodtype constructor-method
+     * Expects that all Name components are properly masked.
+     * Does not try to "fix" masking and wirft daher keine Fehler bei Maskierungsproblemen.
+     */
     constructor(other: string[], delimiter?: string) {
-        throw new Error("needs implementation or deletion");
+        // Kopie übernehmen, damit externe Änderungen am Array nicht intern durchschlagen.
+        this.components = other.slice();
+
+        // Falls ein benutzerdefinierter Delimiter übergeben wird, setzen.
+        // Sonst Standard '.'.
+        this.delimiter = (delimiter !== undefined) ? delimiter : DEFAULT_DELIMITER;
     }
 
     /**
-     * Returns a human-readable representation of the Name instance using user-set special characters
-     * Special characters are not escaped (creating a human-readable string)
-     * Users can vary the delimiter character to be used
+     * @methodtype get-method
+     * Returns a human-readable representation of the Name instance.
+     * - Special characters are NOT escaped.
+     * - Die Komponenten werden zuerst entmaskiert (also "\" vor Sonderzeichen entfernt).
+     * - Dann werden die "rohen" Komponenten mit dem gewünschten Delimiter zusammengefügt.
+     *   Achtung: Dieser Delimiter muss nicht dem internen delimiter entsprechen.
      */
-    public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
+    public asString(delimiterChar: string = this.delimiter): string {
+        // Schritt 1: interne (maskierte) Komponenten entmaskieren
+        const humanParts: string[] = this.components.map(
+            (c) => Name.unescapeComponent(c, this.delimiter)
+        );
+
+        // Schritt 2: mit gewünschtem Delimiter zusammenfügen
+        return humanParts.join(delimiterChar);
     }
 
-    /** 
-     * Returns a machine-readable representation of Name instance using default special characters
-     * Machine-readable means that from a data string, a Name can be parsed back in
-     * The special characters in the data string are the default characters
+    /**
+     * @methodtype get-method
+     * Returns a machine-readable representation of this Name.
+     * "Machine-readable" heißt eindeutig parsebar.
+     * Vorgaben:
+     * - Als Delimiter wird IMMER DEFAULT_DELIMITER ('.') benutzt.
+     * - Als Escape-Zeichen wird IMMER ESCAPE_CHARACTER ('\') benutzt.
+     *
+     * Ablauf:
+     * 1. Aktuelle Komponenten werden entmaskiert (also "roher" Inhalt).
+     * 2. Diese rohen Strings werden neu maskiert,
+     *    aber diesmal so, dass '.' und '\' (die Standard-Sonderzeichen)
+     *    korrekt escaped sind.
+     * 3. Join mit '.'.
      */
     public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+        // 1. Entmaskieren relativ zum internen delimiter.
+        const rawParts: string[] = this.components.map(
+            (c) => Name.unescapeComponent(c, this.delimiter)
+        );
+
+        // 2. Für DEFAULT_DELIMITER neu maskieren.
+        const escapedForDefault: string[] = rawParts.map(
+            (c) => Name.escapeComponent(c, DEFAULT_DELIMITER)
+        );
+
+        // 3. Mit DEFAULT_DELIMITER joinen.
+        return escapedForDefault.join(DEFAULT_DELIMITER);
     }
 
-    /** Returns properly masked component string */
+    /**
+     * @methodtype get-method
+     * Returns the masked component string at index i.
+     * Also wirklich der intern gespeicherte (maskierte) Wert.
+     */
     public getComponent(i: number): string {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i >= this.components.length) {
+            throw new RangeError("index out of range");
+        }
+        return this.components[i];
     }
 
-    /** Expects that new Name component c is properly masked */
+    /**
+     * @methodtype set-method
+     * Sets / replaces component at index i.
+     * Erwartet, dass c bereits korrekt maskiert ist für das aktuelle this.delimiter.
+     */
     public setComponent(i: number, c: string): void {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i >= this.components.length) {
+            throw new RangeError("index out of range");
+        }
+        this.components[i] = c;
     }
 
-     /** Returns number of components in Name instance */
-     public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
+    /**
+     * @methodtype get-method
+     * Returns number of components in this Name.
+     */
+    public getNoComponents(): number {
+        return this.components.length;
     }
 
-    /** Expects that new Name component c is properly masked */
+    /**
+     * @methodtype insert-method
+     * Inserts a new (maskierte) Komponente c vor Index i.
+     * Gültig sind 0 <= i <= length (am Ende einfügen ist erlaubt).
+     * Erwartet, dass c bereits korrekt maskiert ist.
+     */
     public insert(i: number, c: string): void {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i > this.components.length) {
+            throw new RangeError("index out of range");
+        }
+        this.components.splice(i, 0, c);
     }
 
-    /** Expects that new Name component c is properly masked */
+    /**
+     * @methodtype append-method
+     * Appends a new (maskierte) Komponente c ans Ende.
+     * Erwartet, dass c bereits korrekt maskiert ist.
+     */
     public append(c: string): void {
-        throw new Error("needs implementation or deletion");
+        this.components.push(c);
     }
 
+    /**
+     * @methodtype remove-method
+     * Removes the component at index i.
+     */
     public remove(i: number): void {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i >= this.components.length) {
+            throw new RangeError("index out of range");
+        }
+        this.components.splice(i, 1);
     }
 
+    /**
+     * @methodtype helper-method
+     * Interpretiert einen maskierten Komponenten-String (relativ zu delimiterChar)
+     * und liefert den "rohen" Inhalt zurück, ohne Escape-Sequenzen.
+     *
+     * Regeln laut Aufgabenstellung:
+     * - Es gibt nur zwei Sonderzeichen: das Delimiter-Zeichen und ESCAPE_CHARACTER.
+     * - Um ein Sonderzeichen literal im Component zu speichern, steht davor ESCAPE_CHARACTER.
+     *   Beispiele (bei delimiter='.'):
+     *     "Oh\.\.\."  ->  "Oh..."
+     *     "\\."       ->  "\."
+     *
+     * Algorithmus:
+     * - Lies Zeichen für Zeichen.
+     * - Falls "\" kommt:
+     *    - Wenn danach "\" oder der aktuelle delimiter kommt:
+     *        dann nimm nur das danach kommende Zeichen wörtlich.
+     *        (also '\' + '.' => '.')
+     *    - Sonst behalte den '\' als normales Zeichen.
+     *      (robuste Fallback-Strategie für "komisch maskierte" Eingaben)
+     */
+    private static unescapeComponent(masked: string, delimiterChar: string): string {
+        let result = "";
+        for (let i = 0; i < masked.length; i++) {
+            const ch = masked.charAt(i);
+
+            if (ch === ESCAPE_CHARACTER) {
+                if (i + 1 < masked.length) {
+                    const next = masked.charAt(i + 1);
+
+                    if (next === ESCAPE_CHARACTER || next === delimiterChar) {
+                        // "\X" -> literal X, wenn X Sonderzeichen ist
+                        result += next;
+                        i++; // skip next char
+                        continue;
+                    }
+                }
+                // Lone '\' am Ende oder vor Nicht-Sonderzeichen.
+                // Dann interpretieren wir '\' als normales Zeichen.
+                result += ESCAPE_CHARACTER;
+            } else {
+                result += ch;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @methodtype helper-method
+     * Nimmt einen "rohen" Komponenten-String (also entmaskiert)
+     * und maskiert ihn so, dass er eindeutig parsebar ist,
+     * für ein bestimmtes delimiterChar.
+     *
+     * Regeln:
+     * - delimiterChar muss escaped werden.
+     * - ESCAPE_CHARACTER muss escaped werden.
+     *
+     * Beispiel bei delimiter='.':
+     * raw: "Oh..."      -> "Oh\.\.\."
+     * raw: "a\b"        -> "a\\b"
+     * raw: "a.b\c"      -> "a\.b\\c"
+     */
+    private static escapeComponent(raw: string, delimiterChar: string): string {
+        let result = "";
+        for (let i = 0; i < raw.length; i++) {
+            const ch = raw.charAt(i);
+
+            if (ch === ESCAPE_CHARACTER || ch === delimiterChar) {
+                result += ESCAPE_CHARACTER;
+            }
+
+            result += ch;
+        }
+        return result;
+    }
 }
