@@ -1,5 +1,3 @@
-import { InvalidStateException } from "./InvalidStateException";
-
 /**
  * Root class for exceptions in ADAP examples
  */
@@ -20,8 +18,10 @@ export abstract class Exception extends Error {
     }
 
     public getTrigger(): Exception {
-        // @todo check if trigger is null
-        return this.trigger as Exception;
+        if (this.trigger == null) {
+            throw new Error("Trigger is null");
+        }
+        return this.trigger;
     }
 
 }
