@@ -7,63 +7,89 @@ export class StringArrayName extends AbstractName {
     protected components: string[] = [];
 
     constructor(source: string[], delimiter?: string) {
-        super();
-        throw new Error("needs implementation or deletion");
+        super(delimiter);
+        if (!Array.isArray(source)) {
+            throw new Error("source must be an array of strings");
+        }
+        this.components = source.map((c) => this.validateComponent(c));
     }
 
     public clone(): Name {
-        throw new Error("needs implementation or deletion");
+        return new StringArrayName(this.components.slice(), this.delimiter);
     }
 
     public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
+        return super.asString(delimiter);
     }
 
     public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+        return super.asDataString();
     }
 
     public isEqual(other: Name): boolean {
-        throw new Error("needs implementation or deletion");
+        return super.isEqual(other);
     }
 
     public getHashCode(): number {
-        throw new Error("needs implementation or deletion");
+        return super.getHashCode();
     }
 
     public isEmpty(): boolean {
-        throw new Error("needs implementation or deletion");
+        return super.isEmpty();
     }
 
     public getDelimiterCharacter(): string {
-        throw new Error("needs implementation or deletion");
+        return super.getDelimiterCharacter();
     }
 
     public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
+        return this.components.length;
     }
 
     public getComponent(i: number): string {
-        throw new Error("needs implementation or deletion");
+        this.assertComponentIndex(i);
+        return this.components[i];
     }
 
     public setComponent(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
+        this.assertComponentIndex(i);
+        this.components[i] = this.validateComponent(c);
     }
 
     public insert(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
+        this.assertInsertIndex(i);
+        this.components.splice(i, 0, this.validateComponent(c));
     }
 
     public append(c: string) {
-        throw new Error("needs implementation or deletion");
+        this.components.push(this.validateComponent(c));
     }
 
     public remove(i: number) {
-        throw new Error("needs implementation or deletion");
+        this.assertComponentIndex(i);
+        this.components.splice(i, 1);
     }
 
     public concat(other: Name): void {
-        throw new Error("needs implementation or deletion");
+        super.concat(other);
+    }
+
+    private assertComponentIndex(i: number): void {
+        if (!Number.isInteger(i) || i < 0 || i >= this.components.length) {
+            throw new RangeError("Component index is out of bounds");
+        }
+    }
+
+    private assertInsertIndex(i: number): void {
+        if (!Number.isInteger(i) || i < 0 || i > this.components.length) {
+            throw new RangeError("Insert index is out of bounds");
+        }
+    }
+
+    private validateComponent(c: string): string {
+        if (typeof c !== "string") {
+            throw new TypeError("Component must be a string");
+        }
+        return c;
     }
 }
