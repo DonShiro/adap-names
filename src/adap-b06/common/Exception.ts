@@ -18,8 +18,10 @@ export abstract class Exception extends Error {
     }
 
     public getTrigger(): Exception {
-        // @todo check if trigger is null
-        return this.trigger as Exception;
+        if (this.trigger == null) {
+            throw new Error("no trigger available");
+        }
+        return this.trigger;
     }
 
 }

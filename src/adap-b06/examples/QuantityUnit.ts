@@ -35,14 +35,15 @@ export class SIUnit {
     }
 
     public add(other: SIUnit): SIUnit {
-        IllegalArgumentException.assert(!other.isEqual(this));
-        return new SIUnit(this.exponents);
+        IllegalArgumentException.assert(other.isEqual(this));
+        return new SIUnit([...this.exponents]);
     }
 
     public multiply(other: SIUnit): SIUnit {
-        let result: number[] = [0, 0, 0, 0, 0, 0, 0];
+        IllegalArgumentException.assert(this.exponents.length === other.exponents.length);
+        let result: number[] = [];
         for (let i = 0; i < this.exponents.length; i++) {
-            result[1] = this.exponents[i] + other.exponents[i];
+            result[i] = this.exponents[i] + other.exponents[i];
         };
         return new SIUnit(result);
     }

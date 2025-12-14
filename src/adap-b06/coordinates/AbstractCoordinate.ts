@@ -75,6 +75,7 @@ export abstract class AbstractCoordinate implements Coordinate {
     protected abstract doGetR(): number;
 
     public setR(r: number): Coordinate {
+        IllegalArgumentException.assert(this.isValidR(r));
         return this.doSetR(r);
     }
 
@@ -95,14 +96,18 @@ export abstract class AbstractCoordinate implements Coordinate {
 
     public calcGreatCircleDistance(other: Coordinate): number {
         let lowerR = Math.min(this.getR(), other.getR());
-        let deltaPhi = Math.abs(other.getPhi() - this.getPhi());
+        let deltaPhi = Math.abs(this.normalizePhiValue(other.getPhi()) - this.normalizePhiValue(this.getPhi()));
+        let twoPi = 2 * Math.PI;
+        deltaPhi = Math.min(deltaPhi, twoPi - deltaPhi);
         return lowerR * deltaPhi;
     }
 
     public multiplyWith(other: Coordinate): Coordinate {
         let newR = this.getR() * other.getR();
-        let newPhi = this.getPhi() + other.getPhi();
-        return this.doCreate(newR, newPhi);
+        let newPhi = this.normalizePhiValue(this.getPhi() + other.getPhi());
+        let newX = newR * Math.cos(newPhi);
+        let newY = newR * Math.sin(newPhi);
+        return this.doCreate(newX, newY);
     }
 
     protected isValidR(r: number): boolean {
@@ -115,6 +120,12 @@ export abstract class AbstractCoordinate implements Coordinate {
 
     protected isValidDelChar(d: string): boolean {
         return d.length == 1;
+    }
+
+    protected normalizePhiValue(phi: number): number {
+        const twoPi = 2 * Math.PI;
+        const normalized = phi % twoPi;
+        return normalized >= 0 ? normalized : normalized + twoPi;
     }
 
 }

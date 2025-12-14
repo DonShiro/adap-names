@@ -1,3 +1,4 @@
+import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { Coordinate } from "./Coordinate";
 import { AbstractCoordinate } from "./AbstractCoordinate";
 
@@ -14,16 +15,20 @@ export class PolarCoordinate extends AbstractCoordinate {
 
     protected initialize(r?: number, phi?: number): void {
         if (r != undefined) {
+            IllegalArgumentException.assert(this.isValidR(r));
             this.r = r;
         }
 
         if (phi != undefined) {
-            this.phi = phi;
+            IllegalArgumentException.assert(this.isValidPhi(phi));
+            this.phi = this.normalizePhiValue(phi);
         }
     }
 
-    protected doCreate(r: number, phi: number): Coordinate {
-        return new PolarCoordinate(r, phi);
+    protected doCreate(x: number, y: number): Coordinate {
+        let newR = Math.hypot(x, y);
+        let newPhi = this.normalizePhiValue(Math.atan2(y, x));
+        return new PolarCoordinate(newR, newPhi);
     }
 
     public asDataString(): string {
@@ -39,9 +44,9 @@ export class PolarCoordinate extends AbstractCoordinate {
     }
     
     protected doSetX(x: number): Coordinate {
-        let y: number = this.doGetR() * Math.cos(this.doGetPhi());
+        let y: number = this.doGetY();
         let newR: number = Math.hypot(x, y);
-        let newPhi: number = Math.atan2(y, x);
+        let newPhi: number = this.normalizePhiValue(Math.atan2(y, x));
         return new PolarCoordinate(newR, newPhi);
     }
     
@@ -50,9 +55,9 @@ export class PolarCoordinate extends AbstractCoordinate {
     }
 
     protected doSetY(y: number): Coordinate {
-        let x: number = this.doGetR() * Math.sin(this.doGetPhi());
+        let x: number = this.doGetX();
         let newR: number = Math.hypot(x, y);
-        let newPhi: number = Math.atan2(y, x);
+        let newPhi: number = this.normalizePhiValue(Math.atan2(y, x));
         return new PolarCoordinate(newR, newPhi);    
     }
 
@@ -61,7 +66,8 @@ export class PolarCoordinate extends AbstractCoordinate {
     }
 
     protected doSetR(r: number): Coordinate {
-        return new PolarCoordinate(r, this.phi);
+        IllegalArgumentException.assert(this.isValidR(r));
+        return new PolarCoordinate(r, this.normalizePhiValue(this.phi));
     }
 
     protected doGetPhi(): number {
@@ -69,7 +75,8 @@ export class PolarCoordinate extends AbstractCoordinate {
     }
    
     protected doSetPhi(phi: number): Coordinate {
-        return new PolarCoordinate(this.r, phi);   
+        IllegalArgumentException.assert(this.isValidPhi(phi));
+        return new PolarCoordinate(this.r, this.normalizePhiValue(phi));   
     }
 
 }
